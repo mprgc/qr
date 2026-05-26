@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>QR සහ Barcode උත්පාදකය</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Importing libraries for QR and Barcode -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <style>
+        .output-container { min-height: 200px; display: flex; align-items: center; justify-content: center; background: #f3f4f6; border-radius: 8px; margin-top: 1rem; padding: 1rem; }
+        canvas { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg">
+        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">QR සහ Barcode උත්පාදකය</h1>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">පෙළ හෝ අංක ඇතුළත් කරන්න:</label>
+            <textarea id="textInput" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="සබැඳියක් හෝ පෙළක් මෙතනට ටයිප් කරන්න..."></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="generateQR()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition font-semibold">QR කේතය සාදන්න</button>
+            <button onclick="generateBarcode()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition font-semibold">Barcode සාදන්න</button>
+        </div>
+
+        <!-- Output Display -->
+        <div id="outputContainer" class="output-container hidden">
+            <div id="qrCodeDiv"></div>
+            <canvas id="barcodeCanvas" class="hidden"></canvas>
+        </div>
+
+        <!-- Hidden container for High-Res Generation -->
+        <div id="highResContainer" class="hidden"></div>
+
+        <button id="downloadBtn" onclick="downloadImage()" class="w-full mt-4 bg-gray-800 hover:bg-black text-white py-2 rounded-lg hidden">PNG ලෙස බාගත කරන්න</button>
+
+	<footer class="text-center text-gray-500 text-sm mt-8 pb-4">
+        Design by : Gayan Karunathilaka | © Software.GKIS 2026 <br> Version 1.0
+    </footer>
+
+    </div> 
+    
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const outputContainer = document.getElementById('outputContainer');
+        const qrCodeDiv = document.getElementById('qrCodeDiv');
+        const barcodeCanvas = document.getElementById('barcodeCanvas');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const highResContainer = document.getElementById('highResContainer');
+
+        let currentType = ''; 
+
+        function resetUI() {
+            qrCodeDiv.innerHTML = '';
+            qrCodeDiv.classList.add('hidden');
+            barcodeCanvas.classList.add('hidden');
+            outputContainer.classList.remove('hidden');
+            downloadBtn.classList.remove('hidden');
+        }
+
+        // QR Code Generation
+        function generateQR() {
+            const text = textInput.value.trim();
+            if (!text) return alert("කරුණාකර යමක් ටයිප් කරන්න!");
+            
+            resetUI();
+            currentType = 'qr';
+            qrCodeDiv.classList.remove('hidden');
+            
+            new QRCode(qrCodeDiv, {
+                text: text,
+                width: 200,
+                height: 200
+            });
+        }
+
+        // Barcode Generation
+        function generateBarcode() {
+            const text = textInput.value.trim();
+            if (!text) return alert("කරුණාකර අංක හෝ පෙළක් ටයිප් කරන්න!");
+            
+            resetUI();
+            currentType = 'barcode';
+            barcodeCanvas.classList.remove('hidden');
+            
+            try {
+                JsBarcode("#barcodeCanvas", text, {
+                    format: "CODE128",
+                    lineColor: "#000",
+                    width: 2,
+                    height: 100,
+                    displayValue: true
+                });
+            } catch (e) {
+                alert("මෙම පෙළ Barcode එකක් ලෙස සැකසිය නොහැක.");
+            }
+        }
+
+        // Download functionality with High Quality
+        async function downloadImage() {
+            const text = textInput.value.trim();
+            const link = document.createElement('a');
+
+            if (currentType === 'qr') {
+                // Generate high res QR (1000px) in background
+                highResContainer.innerHTML = '';
+                new QRCode(highResContainer, {
+                    text: text,
+                    width: 1000,
+                    height: 1000
+                });
+                
+                // Wait briefly for rendering
+                setTimeout(() => {
+                    const img = highResContainer.querySelector('img');
+                    link.download = `my-code-qr.png`;
+                    link.href = img.src;
+                    link.click();
+                }, 100);
+
+            } else if (currentType === 'barcode') {
+                // Generate high res Barcode (1000px) on temporary canvas
+                const tempCanvas = document.createElement('canvas');
+                JsBarcode(tempCanvas, text, {
+                    format: "CODE128",
+                    lineColor: "#000",
+                    width: 4, // Thicker lines for high res
+                    height: 300,
+                    fontSize: 40,
+                    displayValue: true
+                });
+
+                link.download = `my-code-barcode.png`;
+                link.href = tempCanvas.toDataURL("image/png");
+                link.click();
+            }
+        }
+    </script>
+</body>
+</html>
